@@ -1,0 +1,28 @@
+{
+  "name": "kicad-library-manager",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build && node scripts/vendor.mjs",
+    "test": "python3 -m unittest discover -s tests -v",
+    "start": "python3 app.py"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "occt-import-js": "0.0.23",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.180.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "prettier": "^3.9.9",
+    "typescript": "^5.8.0",
+    "vite": "^6.3.0"
+  }
+}

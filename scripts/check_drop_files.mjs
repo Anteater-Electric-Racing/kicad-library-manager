@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const compiled = await build({entryPoints:['ui/files.ts'],bundle:true,format:'esm',write:false});
+const {droppedFiles} = await import('data:text/javascript;base64,' + Buffer.from(compiled.outputFiles[0].text).toString('base64'));
+let live = true;
+const fileEntry = (name) => ({name,isFile:true,file: (done) => {live = false; queueMicrotask(() => done(new File(['fixture'], name)));}});
+const folder = (name, batches) => ({name,isDirectory:true,createReader:()=>({readEntries:(done)=>queueMicrotask(()=>done(batches.shift() || []))})});
+const directory = folder('folder', [[fileEntry('symbol.kicad_sym')], [folder('nested', [[fileEntry('footprint.kicad_mod')]])]]);
+const items = [directory, fileEntry('another.step')].map((entry) => ({webkitGetAsEntry:()=>{assert.ok(live,'capture all drop handles synchronously'); return entry;},getAsFile:()=>null}));
+assert.deepEqual((await droppedFiles(items)).map((x)=>x.name), ['folder/symbol.kicad_sym','folder/nested/footprint.kicad_mod','another.step']);
+const zip = new File(['zip'], 'component.zip');
+assert.deepEqual(await droppedFiles([{getAsFile:()=>zip}]), [{file:zip,name:'component.zip'}]);
+console.log('Drop collection passed: synchronous capture, directory batches, nested paths and File fallback.');

@@ -1,0 +1,74 @@
+[
+  {
+    "type": "resistor",
+    "package": "0402",
+    "metric": "1005",
+    "symbol": "symbols/Resistor.kicad_sym",
+    "symbolName": "Resistor",
+    "footprint": "footprints/Resistor.pretty/R_0402_1005Metric.kicad_mod",
+    "model": "models-3d/R_0402_1005Metric.step"
+  },
+  {
+    "type": "resistor",
+    "package": "0603",
+    "metric": "1608",
+    "symbol": "symbols/Resistor.kicad_sym",
+    "symbolName": "Resistor",
+    "footprint": "footprints/Resistor.pretty/R_0603_1608Metric.kicad_mod",
+    "model": "models-3d/R_0603_1608Metric.step"
+  },
+  {
+    "type": "resistor",
+    "package": "0805",
+    "metric": "2012",
+    "symbol": "symbols/Resistor.kicad_sym",
+    "symbolName": "Resistor",
+    "footprint": "footprints/Resistor.pretty/R_0805_2012Metric.kicad_mod",
+    "model": "models-3d/R_0805_2012Metric.step"
+  },
+  {
+    "type": "resistor",
+    "package": "1206",
+    "metric": "3216",
+    "symbol": "symbols/Resistor.kicad_sym",
+    "symbolName": "Resistor",
+    "footprint": "footprints/Resistor.pretty/R_1206_3216Metric.kicad_mod",
+    "model": "models-3d/R_1206_3216Metric.step"
+  },
+  {
+    "type": "capacitor",
+    "package": "0402",
+    "metric": "1005",
+    "symbol": "symbols/Capacitor.kicad_sym",
+    "symbolName": "Capacitor",
+    "footprint": "footprints/Capacitor.pretty/C_0402_1005Metric.kicad_mod",
+    "model": "models-3d/C_0402_1005Metric.step"
+  },
+  {
+    "type": "capacitor",
+    "package": "0603",
+    "metric": "1608",
+    "symbol": "symbols/Capacitor.kicad_sym",
+    "symbolName": "Capacitor",
+    "footprint": "footprints/Capacitor.pretty/C_0603_1608Metric.kicad_mod",
+    "model": "models-3d/C_0603_1608Metric.step"
+  },
+  {
+    "type": "capacitor",
+    "package": "0805",
+    "metric": "2012",
+    "symbol": "symbols/Capacitor.kicad_sym",
+    "symbolName": "Capacitor",
+    "footprint": "footprints/Capacitor.pretty/C_0805_2012Metric.kicad_mod",
+    "model": "models-3d/C_0805_2012Metric.step"
+  },
+  {
+    "type": "capacitor",
+    "package": "1206",
+    "metric": "3216",
+    "symbol": "symbols/Capacitor.kicad_sym",
+    "symbolName": "Capacitor",
+    "footprint": "footprints/Capacitor.pretty/C_1206_3216Metric.kicad_mod",
+    "model": "models-3d/C_1206_3216Metric.step"
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "id": "TO-220-3_Horizontal_TabDown",
+    "label": "TO-220 \u00b7 3 pins \u00b7 horizontal, tab down",
+    "source": "Package_TO_SOT_THT:TO-220-3_Horizontal_TabDown",
+    "footprint": "StandardPackages.pretty/TO-220-3_Horizontal_TabDown.kicad_mod",
+    "footprintSHA256": "a05e45e54cab140d32ca14db3480ada604f58b96e907aec112d9402cb547d11d",
+    "model": "models-3d/TO-220-3_Horizontal_TabDown.step",
+    "modelSHA256": "95705144b7aa382f3549bbf03ddf7ad4d6b497aadebf9fcb19cf388a587dfe02"
+  },
+  {
+    "id": "SOT-23",
+    "label": "SOT-23 \u00b7 3 pins",
+    "source": "Package_TO_SOT_SMD:SOT-23",
+    "footprint": "StandardPackages.pretty/SOT-23.kicad_mod",
+    "footprintSHA256": "0d88c86c1b6d8c1aae4aa8c09386264c089d4451a128b6ccd63ed253f4300b15",
+    "model": "models-3d/SOT-23.step",
+    "modelSHA256": "dd5d1711204e1d8d26cd11490923bd84340820baa69538c385a4300ec2539bc0"
+  },
+  {
+    "id": "SOT-23-5",
+    "label": "SOT-23 \u00b7 5 pins",
+    "source": "Package_TO_SOT_SMD:SOT-23-5",
+    "footprint": "StandardPackages.pretty/SOT-23-5.kicad_mod",
+    "footprintSHA256": "455a3f7c3e5eb5b8847eaa5df23e18651e78ab9f75afd09a0883758a0d901761",
+    "model": "models-3d/SOT-23-5.step",
+    "modelSHA256": "720a6eab0024069bbee68e7cb4c3ff1149468a34611225cdc852662c5d0ec2b7"
+  },
+  {
+    "id": "SOT-23-6",
+    "label": "SOT-23 \u00b7 6 pins",
+    "source": "Package_TO_SOT_SMD:SOT-23-6",
+    "footprint": "StandardPackages.pretty/SOT-23-6.kicad_mod",
+    "footprintSHA256": "f341c73aac9dcb553456f68bf3fee3d26eb14acf6d8a1cae82b50418fe1d71ca",
+    "model": "models-3d/SOT-23-6.step",
+    "modelSHA256": "c9fe686b4d1b56927a41fa84a9bc1efb61d8a45a123a3db43bcaa05c2891d635"
+  },
+  {
+    "id": "SOIC-8_3.9x4.9mm_P1.27mm",
+    "label": "SOIC-8 \u00b7 3.9 \u00d7 4.9 mm \u00b7 1.27 mm pitch",
+    "source": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+    "footprint": "StandardPackages.pretty/SOIC-8_3.9x4.9mm_P1.27mm.kicad_mod",
+    "footprintSHA256": "074ecb2092b24fa4b4b9cdd7c926fc587b0d7d6d21e7341e57935fd42d36894f",
+    "model": "models-3d/SOIC-8_3.9x4.9mm_P1.27mm.step",
+    "modelSHA256": "07f46cff378d30e6c27dfd5a03092c795323f86d91c71fc7e743f4f418dc553a"
+  },
+  {
+    "id": "TSSOP-8_3x3mm_P0.65mm",
+    "label": "TSSOP-8 \u00b7 3 \u00d7 3 mm \u00b7 0.65 mm pitch",
+    "source": "Package_SO:TSSOP-8_3x3mm_P0.65mm",
+    "footprint": "StandardPackages.pretty/TSSOP-8_3x3mm_P0.65mm.kicad_mod",
+    "footprintSHA256": "b77b3205490b3554a4d0d627fcc4223ec68dfd45d27d1544086c89ffeb9f34fa",
+    "model": "models-3d/TSSOP-8_3x3mm_P0.65mm.step",
+    "modelSHA256": "cf28a51742b2e31065e201d1b313207140cbfb49062efd938788f7a310d02738"
+  }
+]

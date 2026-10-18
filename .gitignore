@@ -1,0 +1,40 @@
+node_modules/
+web/
+__pycache__/
+*.pyc
+.venv/
+.ruff_cache/
+build/
+dist/
+.DS_Store
+test-results/
+
+# Library data and local machine state must never be committed.
+/components/
+/appdata/
+/parts-library-appdata/
+**/components.csv
+**/library.json
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-*
+*.sqlite3-*
+**/original-downloads/
+**/backups/
+**/migration/
+*.zip
+*.log
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local agent history and reports contain private library details.
+/AGENTS.md
+/docs/README-component-imports.md
+/docs/MINIFIT_ALIGNMENT_2026-09-30.json
+
+# Keep the local active workflow; publish its template until workflow permission is granted.
+/.github/workflows/check.yml
