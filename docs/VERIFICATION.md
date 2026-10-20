@@ -45,3 +45,28 @@ Development tests use disposable fixtures and isolated KiCad configuration. The 
 ## Mac desktop 0.3 — 2026-09-28
 
 74 Python tests passed after the desktop changes, including preference merging, remembered/missing library startup, parent-death cleanup, and shutdown during an active write. Production TypeScript/Vite build, board geometry/material and file-drop collection checks passed. The native AppKit/WKWebView harness loaded a synthetic library and STEP model, checked close guards, native fullscreen and Escape, then verified both host/worker exit and byte-identical fixture data. The installed Applications bundle passed two LaunchServices open/reopen/quit cycles with temporary preferences. Spotlight returns the installed bundle. Python remains external; Intel and Windows execution and general-distribution notarization are not claimed.
+
+## 2026-10-19 clickable STEP rotation rings
+
+Production build and all 79 Python tests pass with ResourceWarnings treated as errors. `node scripts/check_rotation_handles.mjs` exercises the production Three.js rings: XYZ picking, click/reverse, zoom, drag rejection, cancellation and disposal. The native AppKit/WKWebView harness verifies a DOM pointer click updates exactly one numeric rotation by 90°, Shift-click restores it, and fullscreen/Escape/close still pass with unchanged temporary library files. Synthetic DOM events stub pointer capture; physical mouse/touch interaction is not separately automated. Native KiCad STEP export still agrees with preview transforms within 3.09e-13 mm. Only the bundled web assets and application signature were refreshed in the installed app; other runtime files were hash-verified unchanged.
+
+The refreshed installed app also passed two LaunchServices launch/reopen/quit cycles with isolated preferences and a temporary library.
+
+
+## Unified model upload — 2026-10-19
+
+The upload area now becomes the model selectors in the same section after files are uploaded, retaining compact file/folder upload controls. Production build and all 79 Python tests pass. The native WKWebView harness uploads a synthetic symbol through the file input and verifies the same section replaces the empty dropzone with selected models. Existing package-selection, STEP rendering, fullscreen/Escape and close checks pass with unchanged temporary library files. Source release ZIP rebuilt; the installed app was subsequently updated.
+
+## 2026-10-19 catalog thumbnails and keyboard navigation
+
+Production TypeScript/Vite build and all 89 Python tests pass. Synthetic browser checks confirmed STEP/footprint/symbol thumbnails for three catalog rows; Down/Right and Left navigation; last-item limits; unchanged component selection when a slider consumes arrows; and navigation restricted to a one-result search. Thumbnails are rendered lazily and cached in memory, with per-render STEP worker/WebGL cleanup. Built web assets were installed with old hashed assets retained for the active session, signature verification and exact non-web runtime hash preservation. No live library or machine registrations changed. Quit/reopen loads the update.
+
+## 2026-10-19 catalog component previews
+
+Installed-app follow-up: Spotlight resolves the single /Applications/KiCad Library Manager.app. Replaced its outdated complete bundle with the current build, preserving a ZIP backup. Signature and 130 runtime asset files verified. Two LaunchServices launch/reopen/quit cycles passed using isolated temporary preferences and a synthetic library. Existing browser services were left running; no live data or machine registrations changed. Earlier pending app-installation notes are superseded; live category-index publication is separate and remains pending.
+
+Catalog component visualization follow-up: production build and all 89 Python tests pass with ResourceWarnings as errors. New native preview checks verify symbol and footprint SVGs, local STEP bytes, unchanged saved transforms, absent CAD and byte-identical library files after viewing. Browser inspection of a synthetic catalog record confirms the interactive top quarter STEP view and both native drawings; multiple symbol styles share one row. The installed app was subsequently updated.
+
+## 2026-10-19 folder category names
+
+87 Python tests pass with ResourceWarnings treated as errors. New checks cover readable category labels, grouped footprints, unchanged catalog/source links, hidden enabled compatibility registrations, staged import CAD, stable duplicate-name allocation, manual folder moves with historical aliases, original model transforms, legacy `(module)` footprints, relative model references, logos, deletion cleanup, exact rollback, and stale source-CAD detection. Native KiCad renders synthetic grouped footprints. The live chooser after restart and publication to an existing library remain unverified by these synthetic tests.

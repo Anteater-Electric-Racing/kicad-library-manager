@@ -22,6 +22,8 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, Library, Part } from "./api";
 import ImportDialog from "./ImportDialog";
+import ComponentPreviews from "./ComponentPreviews";
+import CatalogPreviews from "./CatalogPreviews";
 import {
   closeGuard,
   desktopMessage,
@@ -42,6 +44,7 @@ const icon = (type: string) =>
   );
 export default function App() {
   const searchInput = useRef<HTMLInputElement>(null);
+  const detailDialog = useRef<HTMLElement>(null);
   const [focusSearch, setFocusSearch] = useState(0);
   const [dropEntries, setDropEntries] = useState<UploadEntry[]>([]);
   const [library, setLibrary] = useState<Library | null>(null),
@@ -157,6 +160,30 @@ export default function App() {
           category.startsWith("components/capacitors/")
         ? "capacitor"
         : "";
+  const selectedIndex = selected ? parts.findIndex((part) => part.ID === selected.ID) : -1;
+  function navigateComponent(direction: number) {
+    const next = parts[selectedIndex + direction];
+    if (next && selectedIndex >= 0) setSelected(next);
+  }
+  useEffect(() => {
+    if (selected) detailDialog.current?.focus();
+  }, [!!selected]);
+  useEffect(() => {
+    if (!selected) return;
+    const navigate = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const target = event.target as HTMLElement;
+      if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (document.fullscreenElement || document.querySelector('.native-fullscreen')) return;
+      if (event.key === "Escape") { event.preventDefault(); setSelected(null); }
+      else if (["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"].includes(event.key)) {
+        event.preventDefault();
+        navigateComponent(event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1);
+      }
+    };
+    document.addEventListener("keydown", navigate);
+    return () => document.removeEventListener("keydown", navigate);
+  }, [selected, selectedIndex, parts]);
   return (
     <div
       className="shell"
@@ -558,7 +585,7 @@ export default function App() {
                 ) : (
                   <>
                     <span>CATEGORY</span>
-                    <span>MODELS</span>
+                    <span>PREVIEWS</span>
                   </>
                 )}
                 <span />
@@ -566,7 +593,7 @@ export default function App() {
               {parts.map((p) => (
                 <button
                   key={p.ID}
-                  className="part-row"
+                  className={`part-row${selected?.ID === p.ID ? " selected-part" : ""}`}
                   onClick={() => setSelected(p)}
                 >
                   <span className="part-identity">
@@ -576,6 +603,7 @@ export default function App() {
                       <small>
                         {p.Manufacturer} · {p.Description || p.Value}
                       </small>
+                      {passiveType && <CatalogPreviews key={`${library!.id}:${library!.revision}:${p.ID}`} partID={p.ID} revision={`${library!.id}:${library!.revision}`} />}
                     </span>
                   </span>
                   {passiveType ? (
@@ -594,11 +622,7 @@ export default function App() {
                       <span className="category-text">
                         {p.Category.replaceAll("/", " / ")}
                       </span>
-                      <span className="model-badges">
-                        {p.Symbol && <i>SYM</i>}
-                        {p.Footprint && <i>FP</i>}
-                        {!p.Symbol && !p.Footprint && <i>PART</i>}
-                      </span>
+                      <CatalogPreviews key={`${library!.id}:${library!.revision}:${p.ID}`} partID={p.ID} revision={`${library!.id}:${library!.revision}`} />
                     </>
                   )}
                   <ChevronRight size={17} />
@@ -665,6 +689,11 @@ export default function App() {
         <div className="modal-backdrop" onClick={() => setSelected(null)}>
           <section
             className="detail-dialog"
+            ref={detailDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Component preview"
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
           >
             <button className="close" onClick={() => setSelected(null)}>
@@ -673,6 +702,12 @@ export default function App() {
             <div className="eyebrow">COMPONENT RECORD</div>
             <h2>{selected.MPN}</h2>
             <p>{selected.Manufacturer}</p>
+            <div className="component-navigation">
+              <button className="secondary" disabled={selectedIndex <= 0} onClick={() => navigateComponent(-1)}>← Previous</button>
+              <span>{selectedIndex + 1} / {parts.length} · Use arrow keys</span>
+              <button className="secondary" disabled={selectedIndex < 0 || selectedIndex >= parts.length - 1} onClick={() => navigateComponent(1)}>Next →</button>
+            </div>
+            <ComponentPreviews key={selected.ID} partID={selected.ID} />
             <dl>
               {[
                 "Description",

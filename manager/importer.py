@@ -924,7 +924,8 @@ class ImportSession:
             ] = self.archive()
         updated = [r for r in rows if r["ID"] != row["ID"]] + accessory_rows + [row]
         writes[APPDATA + "/components.csv"] = csv_bytes(updated)
-        writes.update(lib.compiled(updated))
+        derived_fingerprints = {}
+        writes.update(lib.compiled(updated, writes, derived_fingerprints))
         token = uuid.uuid4().hex
         fingerprints = {
             name: digest(inside(lib.root, name).read_bytes())
@@ -932,6 +933,7 @@ class ImportSession:
             else None
             for name in set(writes) | set(deletes)
         }
+        fingerprints.update(derived_fingerprints)
         for field in ("SymbolFile", "FootprintFile"):
             if row[field] and row[field] not in writes:
                 fingerprints[row[field]] = digest(

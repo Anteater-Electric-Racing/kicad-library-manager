@@ -28,6 +28,7 @@ from .storage import (
     category_path,
 )
 from .importer import ImportSession
+from .preview import component_preview
 
 
 class State:
@@ -166,6 +167,12 @@ def run(library=None, port=0, open_browser=True, desktop=False, parent_pid=None)
                             )
                         if path == "/api/setup":
                             return self.send(kicad.setup_status(state.lib()))
+                        if path == "/api/component-preview":
+                            kind = query.get("kind", ["model"])[0]
+                            result = component_preview(state.lib(), query["partID"][0], kind)
+                            if kind == "step":
+                                return self.send(result, content_type="application/octet-stream")
+                            return self.send(result)
                         if path == "/api/generic-preview" or (
                             path == "/api/preview" and query.get("kind") == ["generic"]
                         ):

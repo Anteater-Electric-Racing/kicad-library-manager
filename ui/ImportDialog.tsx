@@ -518,6 +518,7 @@ export default function ImportDialog({
     );
     setReview(null);
   }
+  const hasModelAssets = !!session?.assets?.length;
   const selectedSymbol = session?.assets.find((a: any) => a.id === symbolAsset);
   const visibleInfo = review?.info || info;
   const modelURL =
@@ -585,38 +586,159 @@ export default function ImportDialog({
         <div className="import-body">
           <fieldset className="import-controls" disabled={!!busy || !session}>
             <>
-              <div className="dropzone">
-                <Upload size={30} />
-                <strong>Drop a folder, ZIP, or CAD files</strong>
-                <span>KiCad symbols · footprints · STEP</span>
-                <div>
-                  <button
-                    className="secondary"
-                    onClick={() => files.current?.click()}
-                  >
-                    Choose files
-                  </button>
-                  <button
-                    className="text-button"
-                    onClick={() => folders.current?.click()}
-                  >
-                    Choose folder
-                  </button>
-                </div>
-              </div>
+              <section
+                className={`model-upload${hasModelAssets ? " has-assets" : ""}`}
+                aria-label="Component models"
+              >
+                {hasModelAssets ? (
+                  <>
+                    <div className="model-upload-heading">
+                      <h3>Models that belong together</h3>
+                      <div className="model-upload-actions">
+                        <button
+                          className="text-button"
+                          onClick={() => files.current?.click()}
+                        >
+                          <Upload size={15} /> Add files
+                        </button>
+                        <button
+                          className="text-button"
+                          onClick={() => folders.current?.click()}
+                        >
+                          Add folder
+                        </button>
+                      </div>
+                    </div>
+                    <p className="muted">
+                      Original downloads are preserved. Review the working
+                      models before saving. Drop more files here to add models.
+                    </p>
+                    {mode === "bespoke" && (
+                      <>
+                        <AssetSelect
+                          label="Symbol library"
+                          assets={
+                            session?.assets.filter(
+                              (a: any) => a.type === ".kicad_sym",
+                            ) || []
+                          }
+                          value={symbolAsset}
+                          onChange={(v) => {
+                            setSymbolAsset(v);
+                            const asset = session.assets.find(
+                              (a: any) => a.id === v,
+                            );
+                            const name =
+                              asset?.suggestedSymbol ||
+                              (asset?.symbols?.length === 1
+                                ? asset.symbols[0]
+                                : "");
+                            setSymbolName(name);
+                            applySymbolMetadata(asset, name);
+                          }}
+                        />
+                        {selectedSymbol && (
+                          <label className="field">
+                            <span>Symbol in file</span>
+                            <select
+                              value={symbolName}
+                              onChange={(e) => {
+                                setSymbolName(e.target.value);
+                                applySymbolMetadata(
+                                  selectedSymbol,
+                                  e.target.value,
+                                );
+                              }}
+                            >
+                              <option value="">Choose a symbol</option>
+                              {selectedSymbol.symbols?.map((n: string) => (
+                                <option key={n}>{n}</option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+                        <AssetSelect
+                          label="Footprint"
+                          assets={
+                            session?.assets.filter(
+                              (a: any) => a.type === ".kicad_mod",
+                            ) || []
+                          }
+                          value={footprintAsset}
+                          onChange={setFootprintAsset}
+                        />
+                        <AssetSelect
+                          label="STEP model (optional)"
+                          assets={
+                            session?.assets.filter((a: any) =>
+                              [".step", ".stp"].includes(a.type),
+                            ) || []
+                          }
+                          value={modelAsset}
+                          onChange={(v) => {
+                            setModelAsset(v);
+                            setModelAction(v ? "replace" : "remove");
+                            setReview(null);
+                          }}
+                        />
+                        {!!editingID &&
+                          (info?.footprint?.models?.length || 0) > 1 && (
+                            <p className="info-box">
+                              This footprint has {info.footprint.models.length}{" "}
+                              model references. The 3D viewer shows the selected
+                              STEP; other references keep their saved alignment
+                              unless you replace or remove the model.
+                            </p>
+                          )}
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="dropzone">
+                    <Upload size={30} />
+                    <strong>Drop a folder, ZIP, or CAD files</strong>
+                    <span>KiCad symbols · footprints · STEP</span>
+                    <div>
+                      <button
+                        className="secondary"
+                        onClick={() => files.current?.click()}
+                      >
+                        Choose files
+                      </button>
+                      <button
+                        className="text-button"
+                        onClick={() => folders.current?.click()}
+                      >
+                        Choose folder
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {mode === "generic" && (
+                  <div className="info-box">
+                    Using shared {part.Type} models for package {part.Package}.
+                    The symbol, footprint, and STEP model are ready to preview.
+                    Change the package in Part details to use another size.
+                  </div>
+                )}
+                {mode === "accessory" && (
+                  <div className="info-box">
+                    Accessories are catalog entries and do not require models.
+                  </div>
+                )}
+              </section>
               <input
                 ref={files}
                 type="file"
                 multiple
                 hidden
-                onChange={(e) =>
-                  upload(
-                    Array.from(e.target.files || []).map((file) => ({
-                      file,
-                      name: file.name,
-                    })),
-                  )
-                }
+                onChange={(e) => {
+                  const entries = Array.from(e.target.files || []).map(
+                    (file) => ({ file, name: file.name }),
+                  );
+                  e.target.value = "";
+                  void upload(entries);
+                }}
               />
               <input
                 ref={folders}
@@ -624,14 +746,16 @@ export default function ImportDialog({
                 multiple
                 hidden
                 {...({ webkitdirectory: "" } as any)}
-                onChange={(e) =>
-                  upload(
-                    Array.from(e.target.files || []).map((file) => ({
+                onChange={(e) => {
+                  const entries = Array.from(e.target.files || []).map(
+                    (file) => ({
                       file,
                       name: file.webkitRelativePath || file.name,
-                    })),
-                  )
-                }
+                    }),
+                  );
+                  e.target.value = "";
+                  void upload(entries);
+                }}
               />
             </>
 
@@ -993,91 +1117,8 @@ export default function ImportDialog({
               )}
             </>
             <>
-              <h3>Models that belong together</h3>
-              <p className="muted">
-                Original downloads are preserved. Review the working models
-                before saving.
-              </p>
-              {mode === "generic" ? (
-                <div className="info-box">
-                  Using shared {part.Type} models for package {part.Package}.
-                  The symbol, footprint, and STEP model are ready to preview.
-                  Change the package in Part details to use another size.
-                </div>
-              ) : mode === "accessory" ? (
-                <div className="info-box">
-                  Accessories are catalog entries and do not require models.
-                </div>
-              ) : (
+              {mode === "bespoke" && (
                 <>
-                  <AssetSelect
-                    label="Symbol library"
-                    assets={
-                      session?.assets.filter(
-                        (a: any) => a.type === ".kicad_sym",
-                      ) || []
-                    }
-                    value={symbolAsset}
-                    onChange={(v) => {
-                      setSymbolAsset(v);
-                      const asset = session.assets.find((a: any) => a.id === v);
-                      const name =
-                        asset?.suggestedSymbol ||
-                        (asset?.symbols?.length === 1 ? asset.symbols[0] : "");
-                      setSymbolName(name);
-                      applySymbolMetadata(asset, name);
-                    }}
-                  />
-                  {selectedSymbol && (
-                    <label className="field">
-                      <span>Symbol in file</span>
-                      <select
-                        value={symbolName}
-                        onChange={(e) => {
-                          setSymbolName(e.target.value);
-                          applySymbolMetadata(selectedSymbol, e.target.value);
-                        }}
-                      >
-                        <option value="">Choose a symbol</option>
-                        {selectedSymbol.symbols?.map((n: string) => (
-                          <option key={n}>{n}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  <AssetSelect
-                    label="Footprint"
-                    assets={
-                      session?.assets.filter(
-                        (a: any) => a.type === ".kicad_mod",
-                      ) || []
-                    }
-                    value={footprintAsset}
-                    onChange={setFootprintAsset}
-                  />
-                  <AssetSelect
-                    label="STEP model (optional)"
-                    assets={
-                      session?.assets.filter((a: any) =>
-                        [".step", ".stp"].includes(a.type),
-                      ) || []
-                    }
-                    value={modelAsset}
-                    onChange={(v) => {
-                      setModelAsset(v);
-                      setModelAction(v ? "replace" : "remove");
-                      setReview(null);
-                    }}
-                  />
-                  {!!editingID &&
-                    (info?.footprint?.models?.length || 0) > 1 && (
-                      <p className="info-box">
-                        This footprint has {info.footprint.models.length} model
-                        references. The 3D viewer shows the selected STEP; other
-                        references keep their saved alignment unless you replace
-                        or remove the model.
-                      </p>
-                    )}
                   {part.Type === "connector" && (
                     <div className="connector-options">
                       <label className="check-label">
@@ -1400,32 +1441,6 @@ export default function ImportDialog({
                     : svgError || "Select CAD files to preview."
                 }
               />
-            )}
-            {!!(visibleInfo?.proposedPins || visibleInfo?.pins)?.length && (
-              <div className="pin-inspector">
-                <div>
-                  <strong>Pin check</strong>
-                  <small>Select a pin to highlight its footprint pads.</small>
-                </div>
-                <div className="pin-chips">
-                  {(visibleInfo.proposedPins || visibleInfo.pins).map(
-                    (p: any, i: number) => (
-                      <button
-                        key={p.number + "-" + i}
-                        className={selectedPin === p.number ? "selected" : ""}
-                        onClick={() => {
-                          setSelectedPin(p.number);
-                          setPreviewTab("footprint");
-                        }}
-                        title={`${p.name} · ${p.type}`}
-                      >
-                        {p.number}
-                        <small>{p.name !== p.number ? p.name : ""}</small>
-                      </button>
-                    ),
-                  )}
-                </div>
-              </div>
             )}
             {visibleInfo?.inference && (
               <div className="inference-note">

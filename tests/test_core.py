@@ -12,6 +12,7 @@ from manager.storage import create_library, Library, APPDATA, csv_bytes
 from manager.importer import ImportSession, resolve_inline_accessories
 from manager import cad, bom, kicad, supplier
 from manager.sexpr import parse, children
+from manager.preview import component_preview
 
 
 FOOTPRINT = """(footprint "Header" (version 20241229) (generator pcbnew) (layer "F.Cu")
@@ -26,6 +27,34 @@ SYMBOL = cad.symbol_library(cad.connector_symbol(3), "Header")
 
 
 class LibraryCase(unittest.TestCase):
+    def test_catalog_previews_preserve_library_and_model_transform(self):
+        session, draft = self.connector()
+        prepared = session.prepare(self.lib, draft)
+        saved = session.commit(self.lib, prepared["token"])
+        before = {str(path.relative_to(self.lib.root)): path.read_bytes()
+                  for path in self.lib.root.rglob("*") if path.is_file()}
+        for kind in ("symbol", "footprint"):
+            result = component_preview(self.lib, saved["ID"], kind)
+            self.assertTrue(result["svgs"])
+            self.assertIn("<svg", result["svgs"][0])
+        result = component_preview(self.lib, saved["ID"], "model")
+        self.assertEqual(result["model"]["offset"], [1, 2, 3])
+        self.assertEqual(result["model"]["rotate"], [10, 20, 30])
+        self.assertIn(b"ISO-10303", component_preview(self.lib, saved["ID"], "step"))
+        after = {str(path.relative_to(self.lib.root)): path.read_bytes()
+                 for path in self.lib.root.rglob("*") if path.is_file()}
+        self.assertEqual(before, after)
+
+    def test_catalog_previews_without_cad(self):
+        row = self.accessory()
+        self.assertEqual(component_preview(self.lib, row["ID"], "symbol"), {"svgs": []})
+        self.assertEqual(component_preview(self.lib, row["ID"], "footprint"), {"svgs": []})
+        self.assertIsNone(component_preview(self.lib, row["ID"], "model")["model"])
+        with self.assertRaises(ValueError):
+            component_preview(self.lib, row["ID"], "step")
+        with self.assertRaises(ValueError):
+            component_preview(self.lib, "missing", "symbol")
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

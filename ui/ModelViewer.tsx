@@ -3,11 +3,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { api, Transform } from "./api";
+import { rotationHandles } from "./rotationHandles";
 import { desktopMessage, isDesktop } from "./desktop";
-import {
-  boardOverlay,
-  setBoardOpacity,
-} from "./boardGeometry";
+import { boardOverlay, setBoardOpacity } from "./boardGeometry";
 
 type Props = {
   editable?: boolean;
@@ -180,10 +178,20 @@ export default function ModelViewer({
     setBoardOpacity(pads, display.current.pcbOpacity);
     scene.add(pads);
     const gizmo = new TransformControls(camera, renderer.domElement);
-    gizmo.setMode(display.current.mode);
+    gizmo.setMode("translate");
+    gizmo.enabled = display.current.mode === "translate";
+    const rings = rotationHandles(
+      camera,
+      renderer.domElement,
+      model,
+      orbit,
+      (axis, direction) => increment("rotate", axis, direction),
+    );
+    rings.setEnabled(editable && display.current.mode === "rotate");
+    scene.add(rings.group);
     gizmo.setTranslationSnap(0.5);
     gizmo.setRotationSnap(Math.PI / 2);
-    if (editable) gizmo.attach(model);
+    if (editable && display.current.mode === "translate") gizmo.attach(model);
     scene.add(gizmo.getHelper());
     gizmo.addEventListener("dragging-changed", (e: any) => {
       orbit.enabled = !e.value;
@@ -244,7 +252,7 @@ export default function ModelViewer({
       orbit.update();
     }
     apply(current.current);
-    controller.current = { model, pads, gizmo, view, apply };
+    controller.current = { model, pads, gizmo, rings, view, apply };
     const worker = new Worker(new URL("./step.worker.ts", import.meta.url));
     const abort = new AbortController();
     let disposed = false;
@@ -304,6 +312,7 @@ export default function ModelViewer({
     resize.observe(element);
     renderer.setAnimationLoop(() => {
       orbit.update();
+      rings.update();
       renderer.render(scene, camera);
     });
     return () => {
@@ -312,6 +321,7 @@ export default function ModelViewer({
       worker.terminate();
       resize.disconnect();
       renderer.setAnimationLoop(null);
+      rings.dispose();
       gizmo.dispose();
       orbit.dispose();
       scene.traverse((o: any) => {
@@ -330,8 +340,13 @@ export default function ModelViewer({
     controller.current?.apply(transform);
   }, [transform]);
   useEffect(() => {
-    controller.current?.gizmo.setMode(mode);
-  }, [mode]);
+    const controls = controller.current;
+    if (!controls) return;
+    controls.rings.setEnabled(editable && mode === "rotate");
+    controls.gizmo.enabled = editable && mode === "translate";
+    if (editable && mode === "translate") controls.gizmo.attach(controls.model);
+    else controls.gizmo.detach();
+  }, [mode, editable]);
   useEffect(() => {
     controller.current?.model.traverse((o: any) => {
       if (o.material) {
@@ -475,6 +490,12 @@ export default function ModelViewer({
               ))}
             </div>
           ))}
+        </div>
+      )}
+      {editable && mode === "rotate" && (
+        <div className="rotation-hint">
+          Click a ring: X red · Y green · Z blue. Each click snaps 90°;
+          Shift-click reverses.
         </div>
       )}
       <div className="model-canvas" ref={host} />

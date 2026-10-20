@@ -376,7 +376,7 @@ class Library:
                 writes[row["FootprintFile"]] = (dump(node) + "\n").encode()
                 fingerprints[row["FootprintFile"]] = digest(original)
         writes[APPDATA + "/components.csv"] = csv_bytes(updated_rows)
-        writes.update(self.compiled(updated_rows))
+        writes.update(self.compiled(updated_rows, writes, fingerprints))
         self.transaction(writes, revision, expected_files=fingerprints)
         return []
 
@@ -419,6 +419,15 @@ class Library:
             self._transaction(writes, deletes)
 
     def _transaction(self, writes, deletes=()):
+        # Generated category files are projections, never working CAD. Remove
+        # stale projections in the same backed-up transaction as their indexes.
+        if APPDATA + "/category-libraries.json" in writes:
+            stale = [
+                p.relative_to(self.root).as_posix()
+                for p in (self.appdata / "generated/categories").rglob("*.kicad_mod")
+                if p.relative_to(self.root).as_posix() not in writes
+            ]
+            deletes = list(dict.fromkeys([*deletes, *stale]))
         stamp = time.strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
         backup = self.appdata / "backups" / f"{stamp}.zip"
         backup.parent.mkdir(parents=True, exist_ok=True)
@@ -523,10 +532,15 @@ class Library:
             if os.path.exists(temp):
                 os.unlink(temp)
 
-    def compiled(self, rows):
-        """Derived files only. Source-library nicknames do not depend on category paths."""
+    def compiled(self, rows, pending=None, fingerprints=None):
+        """Build friendly chooser indexes, preserving stable source CAD links."""
+        from .category_libraries import footprints
+
+        generated, category_entries, footprint_links, category_names = footprints(
+            self, rows, pending or {}, fingerprints if fingerprints is not None else {}
+        )
         connection = sqlite3.connect(":memory:")
-        extra = ["LibraryID", "PartID", "SearchPath"]
+        extra = ["LibraryID", "PartID", "SearchPath", "KiCadFootprint"]
         allcols = COLUMNS + extra
         try:
             connection.execute(
@@ -539,6 +553,7 @@ class Library:
                     self.id,
                     row["ID"],
                     f"{self.name}/{row['Category']}/{row['MPN']}",
+                    footprint_links.get(row["ID"], ""),
                 ]
                 connection.execute(
                     "INSERT INTO components VALUES ("
@@ -556,11 +571,11 @@ class Library:
                 )
                 libraries.append(
                     dict(
-                        name=category.replace("/", " · "),
+                        name=category_names[category],
                         table=view,
                         key="ID",
                         symbols="Symbol",
-                        footprints="Footprint",
+                        footprints="KiCadFootprint",
                         fields=[
                             dict(
                                 column=c,
@@ -644,6 +659,9 @@ class Library:
                     ]
                 )
             for name, uri in entries.items():
+                hidden = True
+                if isinstance(uri, tuple):
+                    uri, hidden = uri
                 result.append(
                     [
                         "lib",
@@ -654,8 +672,8 @@ class Library:
                         ["descr", Q("Library Manager asset")],
                     ]
                 )
-                if kind == "sym_lib_table":
-                    # Keep database source symbols enabled without chooser duplicates.
+                if hidden:
+                    # Compatibility sources stay enabled without chooser duplicates.
                     result[-1].append(["hidden"])
             return (dump(result) + "\n").encode()
 
@@ -663,7 +681,8 @@ class Library:
             f"{APPDATA}/parts.sqlite": payload,
             f"{APPDATA}/parts.kicad_dbl": json_bytes(config),
             f"{APPDATA}/sym-lib-table": table("sym_lib_table", sym_entries),
-            f"{APPDATA}/fp-lib-table": table("fp_lib_table", fp_entries),
+            f"{APPDATA}/fp-lib-table": table("fp_lib_table", {**fp_entries, **category_entries}),
+            **generated,
         }
 
 
@@ -701,7 +720,9 @@ def create_library(path, install_runtime=False):
         )
         lib = Library(root)
         for name, data in lib.compiled([]).items():
-            (root / name).write_bytes(data)
+            target = root / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
         if install_runtime:
             install_portable_runtime(root)
         return lib

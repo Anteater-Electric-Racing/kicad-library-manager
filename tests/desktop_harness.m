@@ -60,11 +60,19 @@
                 self.phase = 1;
                 [self.web evaluateJavaScript:@"Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Add component').click()" completionHandler:nil];
             }];
-        } else if (self.phase == 1 && [text containsString:@"Models that belong together"] && ![result[@"state"][@"busy"] boolValue]) {
+        } else if (self.phase == 1 && [text containsString:@"Drop a folder, ZIP, or CAD files"] && ![result[@"state"][@"busy"] boolValue]) {
             if (![result[@"state"][@"dirty"] boolValue]) { self.failed=YES; return; }
             [self record:@"editor publishes unsaved state"];
-            self.phase = 20;
-            [self.web evaluateJavaScript:@"Array.from(document.querySelectorAll('.type-grid button')).find(b=>b.textContent.trim()==='IC').click()" completionHandler:nil];
+            self.phase = 19;
+            [self.web evaluateJavaScript:@"(()=>{const area=document.querySelector('.model-upload');if(!area.querySelector('.dropzone')||area.querySelector('select'))throw Error('Expected upload-only initial state');window.uploadArea=area;const input=document.querySelector('input[type=file]:not([webkitdirectory])'),dt=new DataTransfer();dt.items.add(new File([\"(kicad_symbol_lib (version 20231120) (generator \\\"fixture\\\") (symbol \\\"UploadFixture\\\" (property \\\"Reference\\\" \\\"U\\\" (at 0 0 0)) (property \\\"Value\\\" \\\"UploadFixture\\\" (at 0 0 0)) (symbol \\\"UploadFixture_1_1\\\" (pin passive line (at 0 0 0) (length 2.54) (name \\\"1\\\") (number \\\"1\\\")))))\"],'fixture.kicad_sym'));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()" completionHandler:^(id value,NSError *error){if(error){NSLog(@"UPLOAD ERROR %@",error);self.failed=YES;}}];
+        } else if (self.phase == 19 && [text containsString:@"Models that belong together"] && ![result[@"state"][@"busy"] boolValue]) {
+            self.phase = 23;
+            [self.web evaluateJavaScript:@"(()=>{const a=document.querySelector('.model-upload');return a===window.uploadArea&&!a.querySelector('.dropzone')&&a.querySelectorAll('select').length===4&&a.innerText.includes('Add files')&&Array.from(a.querySelectorAll('select')).some(s=>s.value==='UploadFixture')&&document.querySelectorAll('.model-upload').length===1;})()" completionHandler:^(id value,NSError *error){
+                if(error || ![value boolValue]){self.failed=YES;return;}
+                [self record:@"file upload replaces dropzone with selected models in the same section"];
+                self.phase=20;
+                [self.web evaluateJavaScript:@"Array.from(document.querySelectorAll('.type-grid button')).find(b=>b.textContent.trim()==='IC').click()" completionHandler:nil];
+            }];
         } else if (self.phase == 20 && [text containsString:@"Standard package"]) {
             self.phase = 21;
             [self.web evaluateJavaScript:@"(()=>{const s=document.querySelector('[aria-label=\"Standard package\"]'); if(s.options.length!==7)throw Error('Expected six packages'); s.value='SOT-23';s.dispatchEvent(new Event('change',{bubbles:true}));})()" completionHandler:^(id value,NSError *error) { if(error)self.failed=YES; }];
@@ -93,8 +101,24 @@
             [self.web evaluateJavaScript:@"window.managerCloseState=window.originalCloseState; Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='3D alignment').click()" completionHandler:nil];
         } else if (self.phase == 4 && [result[@"canvas"] boolValue] && [text containsString:@"PCB opacity"] && ![text containsString:@"Loading STEP"] && ![text containsString:@"unavailable"]) {
             [self record:@"WKWebView WebGL and STEP worker render; PCB slider visible"];
-            self.phase = 5;
-            [self.web evaluateJavaScript:@"Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Full screen').click()" completionHandler:nil];
+            self.phase = 24;
+            [self.web evaluateJavaScript:@"Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Rotate').click()" completionHandler:nil];
+        } else if (self.phase == 24 && [text containsString:@"Click a ring"]) {
+            self.phase = 26;
+            // Use production picking and React callbacks. Synthetic pointer events
+            // do not create a browser active-pointer entry, so stub capture only.
+            [self.web evaluateJavaScript:@"(()=>{const c=document.querySelector('canvas'),r=c.getBoundingClientRect();window.ringBefore=Array.from(document.querySelectorAll('input[aria-label^=\"rotate \"]')).map(i=>+i.value);window.clickRing=(reverse=false)=>{const p=window.ringPoint;if(!p)throw Error('No ring hit');const capture=c.setPointerCapture,has=c.hasPointerCapture;c.setPointerCapture=()=>{};c.hasPointerCapture=()=>false;try{for(const type of ['pointerdown','pointerup'])c.dispatchEvent(new PointerEvent(type,{...p,pointerId:9,button:0,buttons:type==='pointerdown'?1:0,shiftKey:reverse,bubbles:true,cancelable:true}));}finally{c.setPointerCapture=capture;c.hasPointerCapture=has;}};for(let y=5;y<r.height;y+=5){for(let x=5;x<r.width;x+=5){const p={clientX:r.left+x,clientY:r.top+y};c.dispatchEvent(new PointerEvent('pointermove',{...p,buttons:0}));if(c.style.cursor==='pointer'){window.ringPoint=p;window.clickRing();return true;}}}throw Error('No circular rotation handle pickable '+JSON.stringify({rect:r.toJSON(),canvas:c.outerHTML,buttons:Array.from(document.querySelectorAll('.viewer-toolbar button.selected')).map(b=>b.textContent)}));})()" completionHandler:^(id value,NSError *error){if(error || ![value boolValue]){NSLog(@"RING ERROR %@",error);self.failed=YES;}else self.phase=25;}];
+        } else if (self.phase == 25) {
+            self.phase = 26;
+            [self.web evaluateJavaScript:@"(()=>{const a=Array.from(document.querySelectorAll('input[aria-label^=\"rotate \"]')).map(i=>+i.value);if(a.filter((v,i)=>v!==window.ringBefore[i]).length!==1||!a.some((v,i)=>v-window.ringBefore[i]===90))throw Error('Ring did not snap one axis 90 degrees');window.clickRing(true);return true;})()" completionHandler:^(id value,NSError *error){if(error){NSLog(@"SNAP ERROR %@",error);self.failed=YES;}else self.phase=27;}];
+        } else if (self.phase == 27) {
+            self.phase = 26;
+            [self.web evaluateJavaScript:@"Array.from(document.querySelectorAll('input[aria-label^=\"rotate \"]')).every((v,i)=>+v.value===window.ringBefore[i])" completionHandler:^(id value,NSError *error){
+                if(error || ![value boolValue]){self.failed=YES;return;}
+                [self record:@"rotation ring DOM click snaps 90 degrees; Shift-click reverses in actual WebKit editor"];
+                self.phase=5;
+                [self.web evaluateJavaScript:@"Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Full screen').click()" completionHandler:nil];
+            }];
         } else if (self.phase == 5 && [text.lowercaseString containsString:@"exit full screen"] && (self.window.styleMask & NSWindowStyleMaskFullScreen)) {
             [self record:@"native WebKit alignment fullscreen works"];
             self.phase = 6;
