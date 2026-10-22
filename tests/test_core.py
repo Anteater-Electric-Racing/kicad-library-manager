@@ -591,6 +591,23 @@ class LibraryCase(unittest.TestCase):
         self.assertTrue(kicad.setup_status(self.lib, config)["connected"])
         self.assertTrue(list(config.glob("*.bak")))
 
+    def test_setup_accepts_null_kicad_path_variables(self):
+        # A fresh KiCad (seen on Windows) writes "vars": null when no path variables exist.
+        for environment in ({"vars": None}, None):
+            config = self.base / f"null-vars-{environment is None}"
+            config.mkdir()
+            (config / "kicad_common.json").write_text(
+                json.dumps({"environment": environment, "unrelated": 1})
+            )
+            self.assertFalse(kicad.setup_status(self.lib, config)["connected"])
+            kicad.connect(self.lib, config=config, check_running=False)
+            data = json.loads((config / "kicad_common.json").read_text())
+            self.assertEqual(
+                data["environment"]["vars"]["MYCO_PARTS_DIR"], str(self.lib.appdata)
+            )
+            self.assertEqual(data["unrelated"], 1)
+            self.assertTrue(kicad.setup_status(self.lib, config)["connected"])
+
     def test_supplier_bespoke_clipboard(self):
         result = supplier.extract(
             "Manufacturer: Acme\nManufacturer Part Number: OP123\nDescription: Precision amplifier\nMouser Part #: 123-OP123\n"
