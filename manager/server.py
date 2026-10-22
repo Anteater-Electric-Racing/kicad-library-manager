@@ -18,7 +18,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 import webbrowser
 
-from . import VERSION, supplier, kicad, cad, preferences
+from . import VERSION, supplier, kicad, cad, preferences, conflicts
 from .storage import (
     Library,
     create_library,
@@ -95,6 +95,7 @@ def run(library=None, port=0, open_browser=True, desktop=False, parent_pid=None)
         remembered = preferences.read().get("lastLibrary")
         if remembered:
             try:
+                conflicts.check(Library(remembered).root)
                 Library(remembered).rows()
                 library = remembered
             except (ValueError, OSError) as exc:
@@ -364,6 +365,7 @@ def run(library=None, port=0, open_browser=True, desktop=False, parent_pid=None)
                         return self.send(preferences.save(data))
                     if path == "/api/open":
                         lib = Library(data["path"])
+                        conflicts.check(lib.root)
                         lib.rows()
                         state.library = lib
                         remember()
