@@ -1,5 +1,6 @@
 import io
 import json
+import os
 from pathlib import Path
 import shutil
 import sqlite3
@@ -258,6 +259,31 @@ class LibraryCase(unittest.TestCase):
                 s.commit(self.lib, r["token"])
         self.assertEqual((self.lib.appdata / "components.csv").read_bytes(), before)
         self.assertFalse((self.lib.root / r["part"]["SymbolFile"]).exists())
+        self.assertFalse((self.lib.appdata / "pending-transaction.json").exists())
+
+    def test_save_while_database_is_open_elsewhere(self):
+        # Windows can't replace a file another process (KiCad via ODBC) has open.
+        s, d = self.connector()
+        r = s.prepare(self.lib, d)
+        real_replace = os.replace
+
+        def windows_replace(src, dst):
+            if str(dst).endswith("parts.sqlite"):
+                raise PermissionError(13, "Access is denied", str(dst))
+            return real_replace(src, dst)
+
+        with patch("manager.storage.os.replace", side_effect=windows_replace):
+            saved = s.commit(self.lib, r["token"])
+        conn = sqlite3.connect(self.lib.appdata / "parts.sqlite")
+        try:
+            self.assertEqual(
+                conn.execute(
+                    "SELECT COUNT(*) FROM components WHERE ID=?", (saved["ID"],)
+                ).fetchone()[0],
+                1,
+            )
+        finally:
+            conn.close()
         self.assertFalse((self.lib.appdata / "pending-transaction.json").exists())
 
     def test_zip_traversal_and_duplicate_members_do_not_add_files(self):
