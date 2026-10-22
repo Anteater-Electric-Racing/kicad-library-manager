@@ -168,6 +168,10 @@ def run(library=None, port=0, open_browser=True, desktop=False, parent_pid=None)
                             )
                         if path == "/api/setup":
                             return self.send(kicad.setup_status(state.lib()))
+                        if path == "/api/delete-plan":
+                            from . import delete
+
+                            return self.send(delete.plan(state.lib(), query["part"][0]))
                         if path == "/api/component-preview":
                             kind = query.get("kind", ["model"])[0]
                             result = component_preview(state.lib(), query["partID"][0], kind)
@@ -439,6 +443,12 @@ def run(library=None, port=0, open_browser=True, desktop=False, parent_pid=None)
                         with lib.locked(data.get("revision")):
                             inside(lib.root, name).mkdir(parents=True, exist_ok=True)
                         return self.send(lib.state())
+                    if path == "/api/delete":
+                        from . import delete
+
+                        lib = state.lib()
+                        removed = delete.delete(lib, data["partID"])
+                        return self.send({"removed": removed, "library": lib.state()})
                     if path == "/api/connect":
                         return self.send(
                             kicad.connect(state.lib(), switch=data.get("switch", False))
